@@ -7,6 +7,7 @@ The design of the EOSIO blockchain calls for a number of smart contracts that ar
 This repository contains examples of these privileged contracts that are useful when deploying, managing, and/or using an EOSIO blockchain.  They are provided for reference purposes:
 
    * [eosio.bios](./contracts/eosio.bios)
+   * [eosio.boot](./contracts/eosio.boot)
    * [eosio.system](./contracts/eosio.system)
    * [eosio.msig](./contracts/eosio.msig)
    * [eosio.wrap](./contracts/eosio.wrap)
