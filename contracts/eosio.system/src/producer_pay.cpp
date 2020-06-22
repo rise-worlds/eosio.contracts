@@ -188,4 +188,20 @@ namespace eosiosystem {
       }
    }
 
+   //生产节点领取竹签
+   void system_contract::chipcounter( const name& producer ) {
+      require_auth( producer );
+      print(producer);
+      auto prod = _producers.find( producer.value );
+      if ( prod != _producers.end() 
+          && prod->active() && prod->last_chipcounter_update != _gstate.last_producer_schedule_update
+         //  && prod->last_producer_schedule_version != _gstate.last_producer_schedule_version
+          ) {
+         _producers.modify(prod, same_payer, [&](auto& p) {
+            p.last_chipcounter_update = _gstate.last_producer_schedule_update;
+            p.chipcounter_count++;
+         });
+      }
+   }
+
 } //namespace eosiosystem

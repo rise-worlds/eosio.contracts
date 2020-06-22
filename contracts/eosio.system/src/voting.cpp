@@ -43,7 +43,7 @@ namespace eosiosystem {
             info.is_active          = true;
             info.url                = url;
             info.location           = location;
-            info.producer_authority.emplace( producer_authority );
+            info.producer_authority = producer_authority;
             if ( info.last_claim_time == time_point() )
                info.last_claim_time = ct;
          });
@@ -66,7 +66,7 @@ namespace eosiosystem {
             info.url                = url;
             info.location           = location;
             info.last_claim_time    = ct;
-            info.producer_authority.emplace( producer_authority );
+            info.producer_authority = producer_authority;
          });
          _producers2.emplace( producer, [&]( producer_info2& info ){
             info.owner                     = producer;
@@ -103,42 +103,52 @@ namespace eosiosystem {
       });
    }
 
+   //更新一轮生产节点
    void system_contract::update_elected_producers( const block_timestamp& block_time ) {
+      auto old_last_producer_schedule_update = _gstate.last_producer_schedule_update;
       _gstate.last_producer_schedule_update = block_time;
 
-      auto idx = _producers.get_index<"prototalvote"_n>();
+      // auto idx = _producers.get_index<"prototalvote"_n>();
+      auto idx = _producers.get_index<"prototalchip"_n>();
 
-      using value_type = std::pair<eosio::producer_authority, uint16_t>;
-      std::vector< value_type > top_producers;
+      std::vector<eosio::producer_authority> top_producers;
       top_producers.reserve(21);
 
       for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
-         top_producers.emplace_back(
-            eosio::producer_authority{
-               .producer_name = it->owner,
-               .authority     = it->get_producer_authority()
-            },
-            it->location
-         );
+         if (old_last_producer_schedule_update == it->last_chipcounter_update 
+            // && it->last_producer_schedule_version != _gstate.last_producer_schedule_version
+            ) 
+         {
+            top_producers.emplace_back(
+               eosio::producer_authority{
+                  .producer_name = it->owner,
+                  .authority     = it->get_producer_authority()
+               }
+            );
+         }
       }
 
       if( top_producers.size() == 0 || top_producers.size() < _gstate.last_producer_schedule_size ) {
          return;
       }
 
-      std::sort( top_producers.begin(), top_producers.end(), []( const value_type& lhs, const value_type& rhs ) {
-         return lhs.first.producer_name < rhs.first.producer_name; // sort by producer name
-         // return lhs.second < rhs.second; // sort by location
+      std::sort( top_producers.begin(), top_producers.end(), []( const eosio::producer_authority& lhs, const eosio::producer_authority& rhs ) {
+         return lhs.producer_name < rhs.producer_name; // sort by producer name
       } );
 
-      std::vector<eosio::producer_authority> producers;
-
-      producers.reserve(top_producers.size());
-      for( auto& item : top_producers )
-         producers.push_back( std::move(item.first) );
-
-      if( set_proposed_producers( producers ) >= 0 ) {
+      std::optional<uint64_t> version = set_proposed_producers( top_producers );
+      if( version >= 0 ) {
+         _gstate.last_producer_schedule_version = version.value_or(0);
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
+
+         for( auto& item : top_producers ) {
+            auto prod = _producers.find( item.producer_name.value );
+            _producers.modify( prod, same_payer, [&](auto& p ) {
+               p.last_chipcounter_update = _gstate.last_producer_schedule_update;
+               p.last_producer_schedule_version = _gstate.last_producer_schedule_version;
+               p.chipcounter_count = 0;
+            });
+         }
       }
    }
 

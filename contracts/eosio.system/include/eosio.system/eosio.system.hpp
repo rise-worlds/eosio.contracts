@@ -139,13 +139,15 @@ namespace eosiosystem {
       uint16_t             last_producer_schedule_size = 0;
       double               total_producer_vote_weight = 0; /// the sum of all producer votes
       block_timestamp      last_name_close;
+      uint64_t             last_producer_schedule_version = 0;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
-                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close) )
+                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)
+                                (last_producer_schedule_version) )
    };
 
    // Defines new global state parameters added after version 1.0
@@ -195,63 +197,29 @@ namespace eosiosystem {
       uint32_t                                                 unpaid_blocks = 0;
       time_point                                               last_claim_time;
       uint16_t                                                 location = 0;
-      eosio::binary_extension<eosio::block_signing_authority>  producer_authority; // added in version 1.9.0
+      uint32_t                                                 chipcounter_count = 0;
+      block_timestamp                                          last_chipcounter_update;
+      eosio::block_signing_authority                           producer_authority; // added in version 1.9.0
+      uint64_t                                                 last_producer_schedule_version = 0;
 
       uint64_t primary_key()const { return owner.value;                             }
       double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
       bool     active()const      { return is_active;                               }
-      void     deactivate()       { producer_key = public_key(); producer_authority.reset(); is_active = false; }
+      void     deactivate()       { producer_key = public_key(); producer_authority = eosio::block_signing_authority(); is_active = false; }
+      double   by_chipcounter()const   { return (is_active ? -1. : 1.) * chipcounter_count * 0.1f * total_votes; }
 
       eosio::block_signing_authority get_producer_authority()const {
-         if( producer_authority.has_value() ) {
-            bool zero_threshold = std::visit( [](auto&& auth ) -> bool {
-               return (auth.threshold == 0);
-            }, *producer_authority );
-            // zero_threshold could be true despite the validation done in regproducer2 because the v1.9.0 eosio.system
-            // contract has a bug which may have modified the producer table such that the producer_authority field
-            // contains a default constructed eosio::block_signing_authority (which has a 0 threshold and so is invalid).
-            if( !zero_threshold ) return *producer_authority;
-         }
+         bool zero_threshold = std::visit( [](auto&& auth ) -> bool {
+            return (auth.threshold == 0);
+         }, producer_authority );
+         
+         if( !zero_threshold ) return producer_authority;
          return convert_to_block_signing_authority( producer_key );
       }
 
-      // The unregprod and claimrewards actions modify unrelated fields of the producers table and under the default
-      // serialization behavior they would increase the size of the serialized table if the producer_authority field
-      // was not already present. This is acceptable (though not necessarily desired) because those two actions require
-      // the authority of the producer who pays for the table rows.
-      // However, the rmvproducer action and the onblock transaction would also modify the producer table in a similar
-      // way and increasing its serialized size is not acceptable in that context.
-      // So, a custom serialization is defined to handle the binary_extension producer_authority
-      // field in the desired way. (Note: v1.9.0 did not have this custom serialization behavior.)
-
-      template<typename DataStream>
-      friend DataStream& operator << ( DataStream& ds, const producer_info& t ) {
-         ds << t.owner
-            << t.total_votes
-            << t.producer_key
-            << t.is_active
-            << t.url
-            << t.unpaid_blocks
-            << t.last_claim_time
-            << t.location;
-
-         if( !t.producer_authority.has_value() ) return ds;
-
-         return ds << t.producer_authority;
-      }
-
-      template<typename DataStream>
-      friend DataStream& operator >> ( DataStream& ds, producer_info& t ) {
-         return ds >> t.owner
-                   >> t.total_votes
-                   >> t.producer_key
-                   >> t.is_active
-                   >> t.url
-                   >> t.unpaid_blocks
-                   >> t.last_claim_time
-                   >> t.location
-                   >> t.producer_authority;
-      }
+      EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)(unpaid_blocks)(last_claim_time)
+                              (location)(chipcounter_count)(last_chipcounter_update)(producer_authority)(last_producer_schedule_version) )
+      
    };
 
    // Defines new producer info structure to be stored in new producer info table, added after version 1.3.0
@@ -308,7 +276,8 @@ namespace eosiosystem {
 
 
    typedef eosio::multi_index< "producers"_n, producer_info,
-                               indexed_by<"prototalvote"_n, const_mem_fun<producer_info, double, &producer_info::by_votes>  >
+                               indexed_by<"prototalvote"_n, const_mem_fun<producer_info, double, &producer_info::by_votes>>,
+                               indexed_by<"prototalchip"_n, const_mem_fun<producer_info, double, &producer_info::by_chipcounter>>
                              > producers_table;
 
    typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
@@ -1063,6 +1032,8 @@ namespace eosiosystem {
          [[eosio::action]]
          void voteproducer( const name& voter, const name& proxy, const std::vector<name>& producers );
 
+         [[eosio::action]]
+         void chipcounter( const name& producer );
          /**
           * Register proxy action, sets `proxy` account as proxy.
           * An account marked as a proxy can vote with the weight of other accounts which
@@ -1202,6 +1173,7 @@ namespace eosiosystem {
          using setram_action = eosio::action_wrapper<"setram"_n, &system_contract::setram>;
          using setramrate_action = eosio::action_wrapper<"setramrate"_n, &system_contract::setramrate>;
          using voteproducer_action = eosio::action_wrapper<"voteproducer"_n, &system_contract::voteproducer>;
+         using chipcounter_action = eosio::action_wrapper<"chipcounter"_n, &system_contract::chipcounter>;
          using regproxy_action = eosio::action_wrapper<"regproxy"_n, &system_contract::regproxy>;
          using claimrewards_action = eosio::action_wrapper<"claimrewards"_n, &system_contract::claimrewards>;
          using rmvproducer_action = eosio::action_wrapper<"rmvproducer"_n, &system_contract::rmvproducer>;
