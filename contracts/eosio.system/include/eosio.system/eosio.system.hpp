@@ -137,17 +137,17 @@ namespace eosiosystem {
       int64_t              total_activated_stake = 0;
       time_point           thresh_activated_stake_time;
       uint16_t             last_producer_schedule_size = 0;
+      uint16_t             max_producer_schedule_size = 43;
       double               total_producer_vote_weight = 0; /// the sum of all producer votes
       block_timestamp      last_name_close;
-      uint64_t             last_producer_schedule_version = 0;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
-                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)
-                                (last_producer_schedule_version) )
+                                (last_producer_schedule_size)(max_producer_schedule_size)(total_producer_vote_weight)(last_name_close)
+                              )
    };
 
    // Defines new global state parameters added after version 1.0
@@ -200,13 +200,12 @@ namespace eosiosystem {
       uint32_t                                                 chipcounter_count = 0;
       block_timestamp                                          last_chipcounter_update;
       eosio::block_signing_authority                           producer_authority; // added in version 1.9.0
-      uint64_t                                                 last_producer_schedule_version = 0;
 
       uint64_t primary_key()const { return owner.value;                             }
       double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
       bool     active()const      { return is_active;                               }
       void     deactivate()       { producer_key = public_key(); producer_authority = eosio::block_signing_authority(); is_active = false; }
-      double   by_chipcounter()const   { return (is_active ? -1. : 1.) * chipcounter_count * 0.1f * total_votes; }
+      double   by_chipcounter()const   { return (is_active ? -1. : 1.) * chipcounter_count * 0.01f * total_votes; }
 
       eosio::block_signing_authority get_producer_authority()const {
          bool zero_threshold = std::visit( [](auto&& auth ) -> bool {
@@ -218,7 +217,7 @@ namespace eosiosystem {
       }
 
       EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)(unpaid_blocks)(last_claim_time)
-                              (location)(chipcounter_count)(last_chipcounter_update)(producer_authority)(last_producer_schedule_version) )
+                              (location)(chipcounter_count)(last_chipcounter_update)(producer_authority) )
       
    };
 
@@ -271,6 +270,14 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
    };
 
+   struct [[eosio::table("standby"), eosio::contract("eosio.system")]] standby_producer_info
+   {
+      name                                                     owner;
+      eosio::block_signing_authority                           producer_authority;
+      uint64_t primary_key()const { return owner.value; }
+      EOSLIB_SERIALIZE( standby_producer_info, (owner)(producer_authority) )
+   };
+
 
    typedef eosio::multi_index< "voters"_n, voter_info >  voters_table;
 
@@ -281,6 +288,8 @@ namespace eosiosystem {
                              > producers_table;
 
    typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
+
+   typedef eosio::multi_index< "standby"_n, standby_producer_info > standby_producer_table;
 
 
    typedef eosio::singleton< "global"_n, eosio_global_state >   global_state_singleton;
@@ -500,6 +509,7 @@ namespace eosiosystem {
          voters_table             _voters;
          producers_table          _producers;
          producers_table2         _producers2;
+         standby_producer_table   _standby_producers;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
@@ -1034,6 +1044,19 @@ namespace eosiosystem {
 
          [[eosio::action]]
          void chipcounter( const name& producer );
+
+         [[eosio::action]]
+         void addstandby( const name& producer, const public_key& producer_key );
+
+         [[eosio::action]]
+         void delstandby( const name& producer );
+
+         [[eosio::action]]
+         void enstandby( const name& producer );
+
+         [[eosio::action]]
+         void setmaxprods( const name& producer, uint8_t producer_max_size );
+
          /**
           * Register proxy action, sets `proxy` account as proxy.
           * An account marked as a proxy can vote with the weight of other accounts which
@@ -1174,6 +1197,7 @@ namespace eosiosystem {
          using setramrate_action = eosio::action_wrapper<"setramrate"_n, &system_contract::setramrate>;
          using voteproducer_action = eosio::action_wrapper<"voteproducer"_n, &system_contract::voteproducer>;
          using chipcounter_action = eosio::action_wrapper<"chipcounter"_n, &system_contract::chipcounter>;
+         using enstandby_action = eosio::action_wrapper<"enstandby"_n, &system_contract::enstandby>;
          using regproxy_action = eosio::action_wrapper<"regproxy"_n, &system_contract::regproxy>;
          using claimrewards_action = eosio::action_wrapper<"claimrewards"_n, &system_contract::claimrewards>;
          using rmvproducer_action = eosio::action_wrapper<"rmvproducer"_n, &system_contract::rmvproducer>;
@@ -1184,6 +1208,7 @@ namespace eosiosystem {
          using setalimits_action = eosio::action_wrapper<"setalimits"_n, &system_contract::setalimits>;
          using setparams_action = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
          using setinflation_action = eosio::action_wrapper<"setinflation"_n, &system_contract::setinflation>;
+         using setmaxprods_action = eosio::action_wrapper<"setmaxprods"_n, &system_contract::setmaxprods>;
 
       private:
          // Implementation details:

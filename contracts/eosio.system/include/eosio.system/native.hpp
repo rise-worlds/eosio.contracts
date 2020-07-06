@@ -103,9 +103,14 @@ namespace eosiosystem {
       uint32_t                                  schedule_version = 0;
       std::optional<eosio::producer_schedule>   new_producers;
 
+      bool                                      enable_standby_schedule = false;
+      std::optional<uint32_t>                   standby_schedule_block_num;
+
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
-                                     (schedule_version)(new_producers))
+                                     (schedule_version)(new_producers)
+                                     (enable_standby_schedule)(standby_schedule_block_num)
+                                     )
    };
 
    /**

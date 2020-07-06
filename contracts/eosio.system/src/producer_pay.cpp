@@ -28,7 +28,6 @@ namespace eosiosystem {
       if( _gstate.last_pervote_bucket_fill == time_point() )  /// start the presses
          _gstate.last_pervote_bucket_fill = current_time_point();
 
-
       /**
        * At startup the initial producer may not be one that is registered / elected
        * and therefore there may be no producer object for them.
@@ -42,7 +41,7 @@ namespace eosiosystem {
       }
 
       /// only update block producers once every minute, block_timestamp is in half seconds
-      if( timestamp.slot - _gstate.last_producer_schedule_update.slot > 120 ) {
+      if( timestamp.slot - _gstate.last_producer_schedule_update.slot > 240 ) {
          update_elected_producers( timestamp );
 
          if( (timestamp.slot - _gstate.last_name_close.slot) > blocks_per_day ) {
@@ -191,16 +190,96 @@ namespace eosiosystem {
    //生产节点领取竹签
    void system_contract::chipcounter( const name& producer ) {
       require_auth( producer );
-      print(producer);
+      // print("chipcounter", producer);
+      auto cd = std::max(1, int(_gstate.last_producer_schedule_size - 1)) * 12;
       auto prod = _producers.find( producer.value );
       if ( prod != _producers.end() 
-          && prod->active() && prod->last_chipcounter_update != _gstate.last_producer_schedule_update
-         //  && prod->last_producer_schedule_version != _gstate.last_producer_schedule_version
+          && prod->active()
+          && (prod->last_chipcounter_update != _gstate.last_producer_schedule_update
+             || eosio::current_block_time().slot - prod->last_chipcounter_update.slot >= cd)
           ) {
          _producers.modify(prod, same_payer, [&](auto& p) {
             p.last_chipcounter_update = _gstate.last_producer_schedule_update;
             p.chipcounter_count++;
          });
+      }
+   }
+
+   void system_contract::addstandby( const name& producer, const public_key& producer_key ) {
+      require_auth( get_self() );
+      auto it = _producers.find( producer.value );
+      if ( it == _producers.end() || !it->active() ) {
+         return;
+      }
+      auto prod = _standby_producers.find(producer.value);
+      if ( prod == _standby_producers.end() ) {
+         _standby_producers.emplace( producer, [&]( standby_producer_info& info ){
+            info.owner              = producer;
+            info.producer_authority = convert_to_block_signing_authority( producer_key );
+         });
+      } else {
+         _standby_producers.modify( prod, same_payer, [&]( standby_producer_info& info ){
+            info.producer_authority = convert_to_block_signing_authority( producer_key );
+         });
+      }
+   }
+
+   void system_contract::delstandby( const name& producer ) {
+      auto prod = _standby_producers.find(producer.value);
+      if ( prod != _standby_producers.end() ) {
+         _standby_producers.erase(prod);
+      }
+   }
+
+
+   void system_contract::enstandby( const name& producer ) {
+      require_auth( producer );
+      auto prod = _standby_producers.find(producer.value);
+      if ( prod != _standby_producers.end() ) {
+         print(producer);
+
+         std::vector<eosio::producer_authority> top_standby_producers;
+         top_standby_producers.reserve(_gstate.last_producer_schedule_size);
+
+         for( auto it = _standby_producers.cbegin(); it != _standby_producers.cend() && top_standby_producers.size() < _gstate.last_producer_schedule_size; ++it ) {
+            top_standby_producers.emplace_back(
+               eosio::producer_authority{
+                  .producer_name = it->owner,
+                  .authority     = it->producer_authority
+               }
+            );
+         }
+         if( top_standby_producers.size() == 0 || top_standby_producers.size() < _gstate.last_producer_schedule_size ) {
+            return;
+         }
+         std::sort( top_standby_producers.begin(), top_standby_producers.end(), []( const eosio::producer_authority& lhs, const eosio::producer_authority& rhs ) {
+            return lhs.producer_name < rhs.producer_name; // sort by producer name
+         } );
+
+         std::optional<int64_t> schedule_size = eosio::set_standby_producers(top_standby_producers);
+         std::optional<int64_t> schedule_version = eosio::enable_standby_producers();
+         if( schedule_size >= 0 && schedule_version > 0 ) {
+            _gstate.last_producer_schedule_size = schedule_size.value_or(0);
+            _gstate.last_producer_schedule_update = eosio::current_block_time();
+
+            for( auto& item : top_standby_producers ) {
+               auto prod = _producers.find( item.producer_name.value );
+               _producers.modify( prod, same_payer, [&](auto& p ) {
+                  p.last_chipcounter_update = _gstate.last_producer_schedule_update;
+                  p.chipcounter_count = 0;
+               });
+            }
+         }
+      }
+   }
+
+   void system_contract::setmaxprods( const name& producer, uint8_t producer_max_size ) {
+      require_auth( producer );
+      auto prod = _standby_producers.find(producer.value);
+      if ( prod != _standby_producers.end() ) {
+         if ( _gstate.last_producer_schedule_size < producer_max_size && producer_max_size < 125 ) {
+             _gstate.max_producer_schedule_size = producer_max_size;
+         }
       }
    }
 

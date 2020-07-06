@@ -101,6 +101,7 @@ namespace eosiosystem {
       _producers.modify( prod, same_payer, [&]( producer_info& info ){
          info.deactivate();
       });
+      delstandby(producer);
    }
 
    //更新一轮生产节点
@@ -112,11 +113,31 @@ namespace eosiosystem {
       auto idx = _producers.get_index<"prototalchip"_n>();
 
       std::vector<eosio::producer_authority> top_producers;
-      top_producers.reserve(21);
+      top_producers.reserve(_gstate.max_producer_schedule_size);
 
-      for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
-         if (old_last_producer_schedule_update == it->last_chipcounter_update 
-            // && it->last_producer_schedule_version != _gstate.last_producer_schedule_version
+      if (_standby_producers.begin() != _standby_producers.end()) {
+         auto active_prods = eosio::get_active_producers();
+         auto standby_it = _standby_producers.find(active_prods[0].value);
+         if (standby_it == _standby_producers.end()) {
+            standby_it = _standby_producers.begin();
+         } else {
+            ++standby_it;
+            if (standby_it == _standby_producers.end()) {
+               standby_it = _standby_producers.begin();
+            }
+         }
+         // auto standby_it = _standby_producers.begin();
+         top_producers.emplace_back(
+                eosio::producer_authority{
+                   .producer_name = standby_it->owner,
+                   .authority     = standby_it->producer_authority
+                }
+             );
+      }
+
+      for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < _gstate.max_producer_schedule_size && 0 < it->total_votes && it->active(); ++it ) {
+         if (
+            old_last_producer_schedule_update <= it->last_chipcounter_update 
             ) 
          {
             top_producers.emplace_back(
@@ -138,14 +159,12 @@ namespace eosiosystem {
 
       std::optional<uint64_t> version = set_proposed_producers( top_producers );
       if( version >= 0 ) {
-         _gstate.last_producer_schedule_version = version.value_or(0);
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
 
          for( auto& item : top_producers ) {
             auto prod = _producers.find( item.producer_name.value );
             _producers.modify( prod, same_payer, [&](auto& p ) {
                p.last_chipcounter_update = _gstate.last_producer_schedule_update;
-               p.last_producer_schedule_version = _gstate.last_producer_schedule_version;
                p.chipcounter_count = 0;
             });
          }
