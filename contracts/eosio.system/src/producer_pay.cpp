@@ -40,8 +40,9 @@ namespace eosiosystem {
          });
       }
 
+      auto cd = std::max(240, int(_gstate.last_producer_schedule_size * 0.5)) * 12;
       /// only update block producers once every minute, block_timestamp is in half seconds
-      if( timestamp.slot - _gstate.last_producer_schedule_update.slot > 240 ) {
+      if( timestamp.slot - _gstate.last_producer_schedule_update.slot > cd ) {
          update_elected_producers( timestamp );
 
          if( (timestamp.slot - _gstate.last_name_close.slot) > blocks_per_day ) {
@@ -191,12 +192,14 @@ namespace eosiosystem {
    void system_contract::chipcounter( const name& producer ) {
       require_auth( producer );
       // print("chipcounter", producer);
-      auto cd = std::max(1, int(_gstate.last_producer_schedule_size - 1)) * 12;
+      auto active_prods = eosio::get_active_producers();
+      if (std::find(active_prods.begin(), active_prods.end(), producer) != active_prods.end()) return;
+      // auto cd = std::max(1, int(_gstate.last_producer_schedule_size - 1)) * 12;
       auto prod = _producers.find( producer.value );
       if ( prod != _producers.end() 
           && prod->active()
           && (prod->last_chipcounter_update != _gstate.last_producer_schedule_update
-             || eosio::current_block_time().slot - prod->last_chipcounter_update.slot >= cd)
+             /*|| eosio::current_block_time().slot - prod->last_chipcounter_update.slot >= cd*/)
           ) {
          _producers.modify(prod, same_payer, [&](auto& p) {
             p.last_chipcounter_update = _gstate.last_producer_schedule_update;
@@ -277,8 +280,11 @@ namespace eosiosystem {
       require_auth( producer );
       auto prod = _standby_producers.find(producer.value);
       if ( prod != _standby_producers.end() ) {
-         if ( _gstate.last_producer_schedule_size < producer_max_size && producer_max_size < 125 ) {
+         if ( 21 <= producer_max_size && producer_max_size < 125 ) {
              _gstate.max_producer_schedule_size = producer_max_size;
+             if (_gstate.last_producer_schedule_size > producer_max_size) {
+                _gstate.last_producer_schedule_size = producer_max_size;
+             }
          }
       }
    }

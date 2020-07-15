@@ -115,18 +115,18 @@ namespace eosiosystem {
       std::vector<eosio::producer_authority> top_producers;
       top_producers.reserve(_gstate.max_producer_schedule_size);
 
+      name standby_prod;
       if (_standby_producers.begin() != _standby_producers.end()) {
          auto active_prods = eosio::get_active_producers();
          auto standby_it = _standby_producers.find(active_prods[0].value);
+         if (standby_it != _standby_producers.end()) {
+            standby_it++;
+         }
          if (standby_it == _standby_producers.end()) {
             standby_it = _standby_producers.begin();
-         } else {
-            ++standby_it;
-            if (standby_it == _standby_producers.end()) {
-               standby_it = _standby_producers.begin();
-            }
          }
          // auto standby_it = _standby_producers.begin();
+         standby_prod = standby_it->owner;
          top_producers.emplace_back(
                 eosio::producer_authority{
                    .producer_name = standby_it->owner,
@@ -137,7 +137,9 @@ namespace eosiosystem {
 
       for( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < _gstate.max_producer_schedule_size && 0 < it->total_votes && it->active(); ++it ) {
          if (
-            old_last_producer_schedule_update <= it->last_chipcounter_update 
+            standby_prod != it->owner
+            // && old_last_producer_schedule_update.slot <= it->last_chipcounter_update.slot 
+            // && top_producers.size() < _gstate.max_producer_schedule_size
             ) 
          {
             top_producers.emplace_back(
@@ -147,8 +149,12 @@ namespace eosiosystem {
                }
             );
          }
+         // eosio::print(it->owner, "\n");
+         // eosio::print(it->last_chipcounter_update.slot, "\n");
+         // eosio::print(it->chipcounter_count, ",", it->chipcounter_count * 0.01f * it->total_votes, "\n");
       }
 
+      eosio::print("new prods size ", top_producers.size(), "\n");
       if( top_producers.size() == 0 || top_producers.size() < _gstate.last_producer_schedule_size ) {
          return;
       }
@@ -157,7 +163,7 @@ namespace eosiosystem {
          return lhs.producer_name < rhs.producer_name; // sort by producer name
       } );
 
-      std::optional<uint64_t> version = set_proposed_producers( top_producers );
+      std::optional<uint64_t> version = eosio::set_proposed_producers( top_producers );
       if( version >= 0 ) {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
 
