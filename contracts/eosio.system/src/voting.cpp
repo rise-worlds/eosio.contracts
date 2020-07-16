@@ -154,7 +154,6 @@ namespace eosiosystem {
          // eosio::print(it->chipcounter_count, ",", it->chipcounter_count * 0.01f * it->total_votes, "\n");
       }
 
-      eosio::print("new prods size ", top_producers.size(), "\n");
       if( top_producers.size() == 0 || top_producers.size() < _gstate.last_producer_schedule_size ) {
          return;
       }
@@ -164,7 +163,7 @@ namespace eosiosystem {
       } );
 
       std::optional<uint64_t> version = eosio::set_proposed_producers( top_producers );
-      if( version >= 0 ) {
+      if( version ) {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
 
          for( auto& item : top_producers ) {

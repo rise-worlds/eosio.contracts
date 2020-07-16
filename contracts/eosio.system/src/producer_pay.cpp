@@ -238,40 +238,41 @@ namespace eosiosystem {
    void system_contract::enstandby( const name& producer ) {
       require_auth( producer );
       auto prod = _standby_producers.find(producer.value);
-      if ( prod != _standby_producers.end() ) {
-         print(producer);
+      if ( prod == _standby_producers.end() ) {
+         return;
+      }
+      print(producer);
 
-         std::vector<eosio::producer_authority> top_standby_producers;
-         top_standby_producers.reserve(_gstate.last_producer_schedule_size);
+      std::vector<eosio::producer_authority> top_standby_producers;
+      top_standby_producers.reserve(_gstate.last_producer_schedule_size);
 
-         for( auto it = _standby_producers.cbegin(); it != _standby_producers.cend() && top_standby_producers.size() < _gstate.last_producer_schedule_size; ++it ) {
-            top_standby_producers.emplace_back(
-               eosio::producer_authority{
-                  .producer_name = it->owner,
-                  .authority     = it->producer_authority
-               }
-            );
-         }
-         if( top_standby_producers.size() == 0 || top_standby_producers.size() < _gstate.last_producer_schedule_size ) {
-            return;
-         }
-         std::sort( top_standby_producers.begin(), top_standby_producers.end(), []( const eosio::producer_authority& lhs, const eosio::producer_authority& rhs ) {
-            return lhs.producer_name < rhs.producer_name; // sort by producer name
-         } );
-
-         std::optional<int64_t> schedule_size = eosio::set_standby_producers(top_standby_producers);
-         std::optional<int64_t> schedule_version = eosio::enable_standby_producers();
-         if( schedule_size >= 0 && schedule_version > 0 ) {
-            _gstate.last_producer_schedule_size = schedule_size.value_or(0);
-            _gstate.last_producer_schedule_update = eosio::current_block_time();
-
-            for( auto& item : top_standby_producers ) {
-               auto prod = _producers.find( item.producer_name.value );
-               _producers.modify( prod, same_payer, [&](auto& p ) {
-                  p.last_chipcounter_update = _gstate.last_producer_schedule_update;
-                  p.chipcounter_count = 0;
-               });
+      for( auto it = _standby_producers.cbegin(); it != _standby_producers.cend() && top_standby_producers.size() < _gstate.last_producer_schedule_size; ++it ) {
+         top_standby_producers.emplace_back(
+            eosio::producer_authority{
+               .producer_name = it->owner,
+               .authority     = it->producer_authority
             }
+         );
+      }
+      if( top_standby_producers.size() == 0 || top_standby_producers.size() < _gstate.last_producer_schedule_size ) {
+         return;
+      }
+      std::sort( top_standby_producers.begin(), top_standby_producers.end(), []( const eosio::producer_authority& lhs, const eosio::producer_authority& rhs ) {
+         return lhs.producer_name < rhs.producer_name; // sort by producer name
+      } );
+
+      std::optional<int64_t> schedule_size = eosio::set_standby_producers(top_standby_producers);
+      std::optional<int64_t> schedule_version = eosio::enable_standby_producers();
+      if( schedule_size && *schedule_size > 0 && schedule_version && *schedule_version > 0 ) {
+         _gstate.last_producer_schedule_size = *schedule_size;
+         _gstate.last_producer_schedule_update = eosio::current_block_time();
+
+         for( auto& item : top_standby_producers ) {
+            auto prod = _producers.find( item.producer_name.value );
+            _producers.modify( prod, same_payer, [&](auto& p ) {
+               p.last_chipcounter_update = _gstate.last_producer_schedule_update;
+               p.chipcounter_count = 0;
+            });
          }
       }
    }
