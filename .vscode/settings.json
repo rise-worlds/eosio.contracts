@@ -68,5 +68,16 @@
         "cinttypes": "cpp",
         "bit": "cpp"
     },
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "cmake.environment": {
+        "CMAKE_FRAMEWORK_PATH": "/home/rise/Documents/eosio.cdt/build",
+        // "CMAKE_C_COMPILER": "~/eosio/2.0/opt/clang8/bin/clang",
+        // "CMAKE_CXX_COMPILER": "~/eosio/2.0/opt/clang8/bin/clang++",
+    },
+    "cmake.configureEnvironment": {
+        "CMAKE_FRAMEWORK_PATH": "/home/rise/Documents/eosio.cdt/build",
+    },
+    "cmake.buildEnvironment": {
+        "CMAKE_FRAMEWORK_PATH": "/home/rise/Documents/eosio.cdt/build",
+    }
 }

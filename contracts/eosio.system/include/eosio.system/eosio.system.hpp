@@ -102,7 +102,7 @@ namespace eosiosystem {
      int64_t         high_bid = 0; ///< negative high_bid == closed auction waiting to be claimed
      time_point      last_bid_time;
 
-     uint64_t primary_key()const { return newname.value;                    }
+     eosio::uint256_t primary_key()const { return newname.value;                    }
      uint64_t by_high_bid()const { return static_cast<uint64_t>(-high_bid); }
    };
 
@@ -113,13 +113,13 @@ namespace eosiosystem {
       name         bidder;
       asset        amount;
 
-      uint64_t primary_key()const { return bidder.value; }
+      eosio::uint256_t primary_key()const { return bidder.value; }
    };
-   typedef eosio::multi_index< "namebids"_n, name_bid,
-                               indexed_by<"highbid"_n, const_mem_fun<name_bid, uint64_t, &name_bid::by_high_bid>  >
+   typedef eosio::multi_index< NT(namebids), name_bid,
+                               indexed_by<NT(highbid), const_mem_fun<name_bid, uint64_t, &name_bid::by_high_bid>  >
                              > name_bid_table;
 
-   typedef eosio::multi_index< "bidrefunds"_n, bid_refund > bid_refund_table;
+   typedef eosio::multi_index< NT(bidrefunds), bid_refund > bid_refund_table;
 
    // Defines new global state parameters.
    struct [[eosio::table("global"), eosio::contract("eosio.system")]] eosio_global_state : eosio::blockchain_parameters {
@@ -201,7 +201,7 @@ namespace eosiosystem {
       block_timestamp                                          last_chipcounter_update;
       eosio::block_signing_authority                           producer_authority; // added in version 1.9.0
 
-      uint64_t primary_key()const { return owner.value;                             }
+      eosio::uint256_t primary_key()const { return owner.value;                             }
       double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
       bool     active()const      { return is_active;                               }
       void     deactivate()       { producer_key = public_key(); producer_authority = eosio::block_signing_authority(); is_active = false; }
@@ -227,7 +227,7 @@ namespace eosiosystem {
       double          votepay_share = 0;
       time_point      last_votepay_share_update;
 
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
@@ -258,7 +258,7 @@ namespace eosiosystem {
       uint32_t            reserved2 = 0;
       eosio::asset        reserved3;
 
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
 
       enum class flags1_fields : uint32_t {
          ram_managed = 1,
@@ -274,31 +274,31 @@ namespace eosiosystem {
    {
       name                                                     owner;
       eosio::block_signing_authority                           producer_authority;
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
       EOSLIB_SERIALIZE( standby_producer_info, (owner)(producer_authority) )
    };
 
 
-   typedef eosio::multi_index< "voters"_n, voter_info >  voters_table;
+   typedef eosio::multi_index< NT(voters), voter_info >  voters_table;
 
 
-   typedef eosio::multi_index< "producers"_n, producer_info,
-                               indexed_by<"prototalvote"_n, const_mem_fun<producer_info, double, &producer_info::by_votes>>,
-                               indexed_by<"prototalchip"_n, const_mem_fun<producer_info, double, &producer_info::by_chipcounter>>
+   typedef eosio::multi_index< NT(producers), producer_info,
+                               indexed_by<NT(prototalvote), const_mem_fun<producer_info, double, &producer_info::by_votes>>,
+                               indexed_by<NT(prototalchip), const_mem_fun<producer_info, double, &producer_info::by_chipcounter>>
                              > producers_table;
 
-   typedef eosio::multi_index< "producers2"_n, producer_info2 > producers_table2;
+   typedef eosio::multi_index< NT(producers2), producer_info2 > producers_table2;
 
-   typedef eosio::multi_index< "standby"_n, standby_producer_info > standby_producer_table;
+   typedef eosio::multi_index< NT(standby), standby_producer_info > standby_producer_table;
 
 
-   typedef eosio::singleton< "global"_n, eosio_global_state >   global_state_singleton;
+   typedef eosio::singleton< NT(global), eosio_global_state >   global_state_singleton;
 
-   typedef eosio::singleton< "global2"_n, eosio_global_state2 > global_state2_singleton;
+   typedef eosio::singleton< NT(global2), eosio_global_state2 > global_state2_singleton;
 
-   typedef eosio::singleton< "global3"_n, eosio_global_state3 > global_state3_singleton;
+   typedef eosio::singleton< NT(global3), eosio_global_state3 > global_state3_singleton;
 
-   typedef eosio::singleton< "global4"_n, eosio_global_state4 > global_state4_singleton;
+   typedef eosio::singleton< NT(global4), eosio_global_state4 > global_state4_singleton;
 
    struct [[eosio::table, eosio::contract("eosio.system")]] user_resources {
       name          owner;
@@ -307,7 +307,7 @@ namespace eosiosystem {
       int64_t       ram_bytes = 0;
 
       bool is_empty()const { return net_weight.amount == 0 && cpu_weight.amount == 0 && ram_bytes == 0; }
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
@@ -321,7 +321,7 @@ namespace eosiosystem {
       asset         cpu_weight;
 
       bool is_empty()const { return net_weight.amount == 0 && cpu_weight.amount == 0; }
-      uint64_t  primary_key()const { return to.value; }
+      eosio::uint256_t primary_key()const { return to.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( delegated_bandwidth, (from)(to)(net_weight)(cpu_weight) )
@@ -335,16 +335,16 @@ namespace eosiosystem {
       eosio::asset    cpu_amount;
 
       bool is_empty()const { return net_amount.amount == 0 && cpu_amount.amount == 0; }
-      uint64_t  primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( refund_request, (owner)(request_time)(net_amount)(cpu_amount) )
    };
 
 
-   typedef eosio::multi_index< "userres"_n, user_resources >      user_resources_table;
-   typedef eosio::multi_index< "delband"_n, delegated_bandwidth > del_bandwidth_table;
-   typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
+   typedef eosio::multi_index< NT(userres), user_resources >      user_resources_table;
+   typedef eosio::multi_index< NT(delband), delegated_bandwidth > del_bandwidth_table;
+   typedef eosio::multi_index< NT(refunds), refund_request >      refunds_table;
 
    // `rex_pool` structure underlying the rex pool table. A rex pool table entry is defined by:
    // - `version` defaulted to zero,
@@ -365,10 +365,10 @@ namespace eosiosystem {
       asset      namebid_proceeds;
       uint64_t   loan_num = 0;
 
-      uint64_t primary_key()const { return 0; }
+      eosio::uint256_t primary_key()const { return 0; }
    };
 
-   typedef eosio::multi_index< "rexpool"_n, rex_pool > rex_pool_table;
+   typedef eosio::multi_index< NT(rexpool), rex_pool > rex_pool_table;
 
    // `rex_return_pool` structure underlying the rex return pool table. A rex return pool table entry is defined by:
    // - `version` defaulted to zero,
@@ -392,10 +392,10 @@ namespace eosiosystem {
       static constexpr uint8_t  hours_per_bucket = 12;
       static_assert( total_intervals * dist_interval == 30 * seconds_per_day );
 
-      uint64_t primary_key()const { return 0; }
+      eosio::uint256_t primary_key()const { return 0; }
    };
 
-   typedef eosio::multi_index< "rexretpool"_n, rex_return_pool > rex_return_pool_table;
+   typedef eosio::multi_index< NT(rexretpool), rex_return_pool > rex_return_pool_table;
 
    // `rex_return_buckets` structure underlying the rex return buckets table. A rex return buckets table is defined by:
    // - `version` defaulted to zero,
@@ -404,10 +404,10 @@ namespace eosiosystem {
       uint8_t                           version = 0;
       std::map<time_point_sec, int64_t> return_buckets;
 
-      uint64_t primary_key()const { return 0; }
+      eosio::uint256_t primary_key()const { return 0; }
    };
 
-   typedef eosio::multi_index< "retbuckets"_n, rex_return_buckets > rex_return_buckets_table;
+   typedef eosio::multi_index< NT(retbuckets), rex_return_buckets > rex_return_buckets_table;
 
    // `rex_fund` structure underlying the rex fund table. A rex fund table entry is defined by:
    // - `version` defaulted to zero,
@@ -418,10 +418,10 @@ namespace eosiosystem {
       name    owner;
       asset   balance;
 
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
    };
 
-   typedef eosio::multi_index< "rexfund"_n, rex_fund > rex_fund_table;
+   typedef eosio::multi_index< NT(rexfund), rex_fund > rex_fund_table;
 
    // `rex_balance` structure underlying the rex balance table. A rex balance table entry is defined by:
    // - `version` defaulted to zero,
@@ -437,10 +437,10 @@ namespace eosiosystem {
       int64_t matured_rex = 0;
       std::deque<std::pair<time_point_sec, int64_t>> rex_maturities; /// REX daily maturity buckets
 
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
    };
 
-   typedef eosio::multi_index< "rexbal"_n, rex_balance > rex_balance_table;
+   typedef eosio::multi_index< NT(rexbal), rex_balance > rex_balance_table;
 
    // `rex_loan` structure underlying the `rex_cpu_loan_table` and `rex_net_loan_table`. A rex net/cpu loan table entry is defined by:
    // - `version` defaulted to zero,
@@ -462,19 +462,19 @@ namespace eosiosystem {
       uint64_t            loan_num;
       eosio::time_point   expiration;
 
-      uint64_t primary_key()const { return loan_num;                   }
+      eosio::uint256_t primary_key()const { return loan_num;                   }
       uint64_t by_expr()const     { return expiration.elapsed.count(); }
       uint64_t by_owner()const    { return from.value;                 }
    };
 
-   typedef eosio::multi_index< "cpuloan"_n, rex_loan,
-                               indexed_by<"byexpr"_n,  const_mem_fun<rex_loan, uint64_t, &rex_loan::by_expr>>,
-                               indexed_by<"byowner"_n, const_mem_fun<rex_loan, uint64_t, &rex_loan::by_owner>>
+   typedef eosio::multi_index< NT(cpuloan), rex_loan,
+                               indexed_by<NT(byexpr),  const_mem_fun<rex_loan, uint64_t, &rex_loan::by_expr>>,
+                               indexed_by<NT(byowner), const_mem_fun<rex_loan, uint64_t, &rex_loan::by_owner>>
                              > rex_cpu_loan_table;
 
-   typedef eosio::multi_index< "netloan"_n, rex_loan,
-                               indexed_by<"byexpr"_n,  const_mem_fun<rex_loan, uint64_t, &rex_loan::by_expr>>,
-                               indexed_by<"byowner"_n, const_mem_fun<rex_loan, uint64_t, &rex_loan::by_owner>>
+   typedef eosio::multi_index< NT(netloan), rex_loan,
+                               indexed_by<NT(byexpr),  const_mem_fun<rex_loan, uint64_t, &rex_loan::by_expr>>,
+                               indexed_by<NT(byowner), const_mem_fun<rex_loan, uint64_t, &rex_loan::by_owner>>
                              > rex_net_loan_table;
 
    struct [[eosio::table,eosio::contract("eosio.system")]] rex_order {
@@ -487,12 +487,12 @@ namespace eosiosystem {
       bool                is_open = true;
 
       void close()                { is_open = false;    }
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
       uint64_t by_time()const     { return is_open ? order_time.elapsed.count() : std::numeric_limits<uint64_t>::max(); }
    };
 
-   typedef eosio::multi_index< "rexqueue"_n, rex_order,
-                               indexed_by<"bytime"_n, const_mem_fun<rex_order, uint64_t, &rex_order::by_time>>> rex_order_table;
+   typedef eosio::multi_index< NT(rexqueue), rex_order,
+                               indexed_by<NT(bytime), const_mem_fun<rex_order, uint64_t, &rex_order::by_time>>> rex_order_table;
 
    struct rex_order_outcome {
       bool success;
@@ -1160,55 +1160,55 @@ namespace eosiosystem {
          [[eosio::action]]
          void setinflation( int64_t annual_rate, int64_t inflation_pay_factor, int64_t votepay_factor );
 
-         using init_action = eosio::action_wrapper<"init"_n, &system_contract::init>;
-         using setacctram_action = eosio::action_wrapper<"setacctram"_n, &system_contract::setacctram>;
-         using setacctnet_action = eosio::action_wrapper<"setacctnet"_n, &system_contract::setacctnet>;
-         using setacctcpu_action = eosio::action_wrapper<"setacctcpu"_n, &system_contract::setacctcpu>;
-         using activate_action = eosio::action_wrapper<"activate"_n, &system_contract::activate>;
-         using delegatebw_action = eosio::action_wrapper<"delegatebw"_n, &system_contract::delegatebw>;
-         using deposit_action = eosio::action_wrapper<"deposit"_n, &system_contract::deposit>;
-         using withdraw_action = eosio::action_wrapper<"withdraw"_n, &system_contract::withdraw>;
-         using buyrex_action = eosio::action_wrapper<"buyrex"_n, &system_contract::buyrex>;
-         using unstaketorex_action = eosio::action_wrapper<"unstaketorex"_n, &system_contract::unstaketorex>;
-         using sellrex_action = eosio::action_wrapper<"sellrex"_n, &system_contract::sellrex>;
-         using cnclrexorder_action = eosio::action_wrapper<"cnclrexorder"_n, &system_contract::cnclrexorder>;
-         using rentcpu_action = eosio::action_wrapper<"rentcpu"_n, &system_contract::rentcpu>;
-         using rentnet_action = eosio::action_wrapper<"rentnet"_n, &system_contract::rentnet>;
-         using fundcpuloan_action = eosio::action_wrapper<"fundcpuloan"_n, &system_contract::fundcpuloan>;
-         using fundnetloan_action = eosio::action_wrapper<"fundnetloan"_n, &system_contract::fundnetloan>;
-         using defcpuloan_action = eosio::action_wrapper<"defcpuloan"_n, &system_contract::defcpuloan>;
-         using defnetloan_action = eosio::action_wrapper<"defnetloan"_n, &system_contract::defnetloan>;
-         using updaterex_action = eosio::action_wrapper<"updaterex"_n, &system_contract::updaterex>;
-         using rexexec_action = eosio::action_wrapper<"rexexec"_n, &system_contract::rexexec>;
-         using setrex_action = eosio::action_wrapper<"setrex"_n, &system_contract::setrex>;
-         using mvtosavings_action = eosio::action_wrapper<"mvtosavings"_n, &system_contract::mvtosavings>;
-         using mvfrsavings_action = eosio::action_wrapper<"mvfrsavings"_n, &system_contract::mvfrsavings>;
-         using consolidate_action = eosio::action_wrapper<"consolidate"_n, &system_contract::consolidate>;
-         using closerex_action = eosio::action_wrapper<"closerex"_n, &system_contract::closerex>;
-         using undelegatebw_action = eosio::action_wrapper<"undelegatebw"_n, &system_contract::undelegatebw>;
-         using buyram_action = eosio::action_wrapper<"buyram"_n, &system_contract::buyram>;
-         using buyrambytes_action = eosio::action_wrapper<"buyrambytes"_n, &system_contract::buyrambytes>;
-         using sellram_action = eosio::action_wrapper<"sellram"_n, &system_contract::sellram>;
-         using refund_action = eosio::action_wrapper<"refund"_n, &system_contract::refund>;
-         using regproducer_action = eosio::action_wrapper<"regproducer"_n, &system_contract::regproducer>;
-         using regproducer2_action = eosio::action_wrapper<"regproducer2"_n, &system_contract::regproducer2>;
-         using unregprod_action = eosio::action_wrapper<"unregprod"_n, &system_contract::unregprod>;
-         using setram_action = eosio::action_wrapper<"setram"_n, &system_contract::setram>;
-         using setramrate_action = eosio::action_wrapper<"setramrate"_n, &system_contract::setramrate>;
-         using voteproducer_action = eosio::action_wrapper<"voteproducer"_n, &system_contract::voteproducer>;
-         using chipcounter_action = eosio::action_wrapper<"chipcounter"_n, &system_contract::chipcounter>;
-         using enstandby_action = eosio::action_wrapper<"enstandby"_n, &system_contract::enstandby>;
-         using regproxy_action = eosio::action_wrapper<"regproxy"_n, &system_contract::regproxy>;
-         using claimrewards_action = eosio::action_wrapper<"claimrewards"_n, &system_contract::claimrewards>;
-         using rmvproducer_action = eosio::action_wrapper<"rmvproducer"_n, &system_contract::rmvproducer>;
-         using updtrevision_action = eosio::action_wrapper<"updtrevision"_n, &system_contract::updtrevision>;
-         using bidname_action = eosio::action_wrapper<"bidname"_n, &system_contract::bidname>;
-         using bidrefund_action = eosio::action_wrapper<"bidrefund"_n, &system_contract::bidrefund>;
-         using setpriv_action = eosio::action_wrapper<"setpriv"_n, &system_contract::setpriv>;
-         using setalimits_action = eosio::action_wrapper<"setalimits"_n, &system_contract::setalimits>;
-         using setparams_action = eosio::action_wrapper<"setparams"_n, &system_contract::setparams>;
-         using setinflation_action = eosio::action_wrapper<"setinflation"_n, &system_contract::setinflation>;
-         using setmaxprods_action = eosio::action_wrapper<"setmaxprods"_n, &system_contract::setmaxprods>;
+         using init_action = eosio::action_wrapper<NT(init), &system_contract::init>;
+         using setacctram_action = eosio::action_wrapper<NT(setacctram), &system_contract::setacctram>;
+         using setacctnet_action = eosio::action_wrapper<NT(setacctnet), &system_contract::setacctnet>;
+         using setacctcpu_action = eosio::action_wrapper<NT(setacctcpu), &system_contract::setacctcpu>;
+         using activate_action = eosio::action_wrapper<NT(activate), &system_contract::activate>;
+         using delegatebw_action = eosio::action_wrapper<NT(delegatebw), &system_contract::delegatebw>;
+         using deposit_action = eosio::action_wrapper<NT(deposit), &system_contract::deposit>;
+         using withdraw_action = eosio::action_wrapper<NT(withdraw), &system_contract::withdraw>;
+         using buyrex_action = eosio::action_wrapper<NT(buyrex), &system_contract::buyrex>;
+         using unstaketorex_action = eosio::action_wrapper<NT(unstaketorex), &system_contract::unstaketorex>;
+         using sellrex_action = eosio::action_wrapper<NT(sellrex), &system_contract::sellrex>;
+         using cnclrexorder_action = eosio::action_wrapper<NT(cnclrexorder), &system_contract::cnclrexorder>;
+         using rentcpu_action = eosio::action_wrapper<NT(rentcpu), &system_contract::rentcpu>;
+         using rentnet_action = eosio::action_wrapper<NT(rentnet), &system_contract::rentnet>;
+         using fundcpuloan_action = eosio::action_wrapper<NT(fundcpuloan), &system_contract::fundcpuloan>;
+         using fundnetloan_action = eosio::action_wrapper<NT(fundnetloan), &system_contract::fundnetloan>;
+         using defcpuloan_action = eosio::action_wrapper<NT(defcpuloan), &system_contract::defcpuloan>;
+         using defnetloan_action = eosio::action_wrapper<NT(defnetloan), &system_contract::defnetloan>;
+         using updaterex_action = eosio::action_wrapper<NT(updaterex), &system_contract::updaterex>;
+         using rexexec_action = eosio::action_wrapper<NT(rexexec), &system_contract::rexexec>;
+         using setrex_action = eosio::action_wrapper<NT(setrex), &system_contract::setrex>;
+         using mvtosavings_action = eosio::action_wrapper<NT(mvtosavings), &system_contract::mvtosavings>;
+         using mvfrsavings_action = eosio::action_wrapper<NT(mvfrsavings), &system_contract::mvfrsavings>;
+         using consolidate_action = eosio::action_wrapper<NT(consolidate), &system_contract::consolidate>;
+         using closerex_action = eosio::action_wrapper<NT(closerex), &system_contract::closerex>;
+         using undelegatebw_action = eosio::action_wrapper<NT(undelegatebw), &system_contract::undelegatebw>;
+         using buyram_action = eosio::action_wrapper<NT(buyram), &system_contract::buyram>;
+         using buyrambytes_action = eosio::action_wrapper<NT(buyrambytes), &system_contract::buyrambytes>;
+         using sellram_action = eosio::action_wrapper<NT(sellram), &system_contract::sellram>;
+         using refund_action = eosio::action_wrapper<NT(refund), &system_contract::refund>;
+         using regproducer_action = eosio::action_wrapper<NT(regproducer), &system_contract::regproducer>;
+         using regproducer2_action = eosio::action_wrapper<NT(regproducer2), &system_contract::regproducer2>;
+         using unregprod_action = eosio::action_wrapper<NT(unregprod), &system_contract::unregprod>;
+         using setram_action = eosio::action_wrapper<NT(setram), &system_contract::setram>;
+         using setramrate_action = eosio::action_wrapper<NT(setramrate), &system_contract::setramrate>;
+         using voteproducer_action = eosio::action_wrapper<NT(voteproducer), &system_contract::voteproducer>;
+         using chipcounter_action = eosio::action_wrapper<NT(chipcounter), &system_contract::chipcounter>;
+         using enstandby_action = eosio::action_wrapper<NT(enstandby), &system_contract::enstandby>;
+         using regproxy_action = eosio::action_wrapper<NT(regproxy), &system_contract::regproxy>;
+         using claimrewards_action = eosio::action_wrapper<NT(claimrewards), &system_contract::claimrewards>;
+         using rmvproducer_action = eosio::action_wrapper<NT(rmvproducer), &system_contract::rmvproducer>;
+         using updtrevision_action = eosio::action_wrapper<NT(updtrevision), &system_contract::updtrevision>;
+         using bidname_action = eosio::action_wrapper<NT(bidname), &system_contract::bidname>;
+         using bidrefund_action = eosio::action_wrapper<NT(bidrefund), &system_contract::bidrefund>;
+         using setpriv_action = eosio::action_wrapper<NT(setpriv), &system_contract::setpriv>;
+         using setalimits_action = eosio::action_wrapper<NT(setalimits), &system_contract::setalimits>;
+         using setparams_action = eosio::action_wrapper<NT(setparams), &system_contract::setparams>;
+         using setinflation_action = eosio::action_wrapper<NT(setinflation), &system_contract::setinflation>;
+         using setmaxprods_action = eosio::action_wrapper<NT(setmaxprods), &system_contract::setmaxprods>;
 
       private:
          // Implementation details:

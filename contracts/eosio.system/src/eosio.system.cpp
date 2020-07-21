@@ -360,7 +360,7 @@ namespace eosiosystem {
    }
 
    void native::setabi( const name& acnt, const std::vector<char>& abi ) {
-      eosio::multi_index< "abihash"_n, abi_hash >  table(get_self(), get_self().value);
+      eosio::multi_index< NT(abihash), abi_hash >  table(get_self(), get_self().value);
       auto itr = table.find( acnt.value );
       if( itr == table.end() ) {
          table.emplace( acnt, [&]( auto& row ) {

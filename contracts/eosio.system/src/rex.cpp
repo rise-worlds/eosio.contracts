@@ -77,7 +77,7 @@ namespace eosiosystem {
          }
       }
 
-      update_resource_limits( name(0), receiver, -from_net.amount, -from_cpu.amount );
+      update_resource_limits( name(), receiver, -from_net.amount, -from_cpu.amount );
 
       const asset payment = from_net + from_cpu;
       // inline transfer from stake_account to rex_account
@@ -328,11 +328,11 @@ namespace eosiosystem {
       /// check for any outstanding loans or rex fund
       {
          rex_cpu_loan_table cpu_loans( get_self(), get_self().value );
-         auto cpu_idx = cpu_loans.get_index<"byowner"_n>();
+         auto cpu_idx = cpu_loans.get_index<NT(byowner)>();
          bool no_outstanding_cpu_loans = ( cpu_idx.find( owner.value ) == cpu_idx.end() );
 
          rex_net_loan_table net_loans( get_self(), get_self().value );
-         auto net_idx = net_loans.get_index<"byowner"_n>();
+         auto net_idx = net_loans.get_index<NT(byowner)>();
          bool no_outstanding_net_loans = ( net_idx.find( owner.value ) == net_idx.end() );
 
          auto fund_itr = _rexfunds.find( owner.value );
@@ -438,7 +438,7 @@ namespace eosiosystem {
          if ( _rexorders.begin() == _rexorders.end() ) {
             return true; // no outstanding sellrex orders
          } else {
-            auto idx = _rexorders.get_index<"bytime"_n>();
+            auto idx = _rexorders.get_index<NT(bytime)>();
             return !idx.begin()->is_open; // no outstanding unfilled sellrex orders
          }
       }
@@ -557,7 +557,7 @@ namespace eosiosystem {
       /// process cpu loans
       {
          rex_cpu_loan_table cpu_loans( get_self(), get_self().value );
-         auto cpu_idx = cpu_loans.get_index<"byexpr"_n>();
+         auto cpu_idx = cpu_loans.get_index<NT(byexpr)>();
          for ( uint16_t i = 0; i < max; ++i ) {
             auto itr = cpu_idx.begin();
             if ( itr == cpu_idx.end() || itr->expiration > current_time_point() ) break;
@@ -574,7 +574,7 @@ namespace eosiosystem {
       /// process net loans
       {
          rex_net_loan_table net_loans( get_self(), get_self().value );
-         auto net_idx = net_loans.get_index<"byexpr"_n>();
+         auto net_idx = net_loans.get_index<NT(byexpr)>();
          for ( uint16_t i = 0; i < max; ++i ) {
             auto itr = net_idx.begin();
             if ( itr == net_idx.end() || itr->expiration > current_time_point() ) break;
@@ -590,7 +590,7 @@ namespace eosiosystem {
 
       /// process sellrex orders
       if ( _rexorders.begin() != _rexorders.end() ) {
-         auto idx  = _rexorders.get_index<"bytime"_n>();
+         auto idx  = _rexorders.get_index<NT(bytime)>();
          auto oitr = idx.begin();
          for ( uint16_t i = 0; i < max; ++i ) {
             if ( oitr == idx.end() || !oitr->is_open ) break;

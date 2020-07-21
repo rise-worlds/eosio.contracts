@@ -110,17 +110,17 @@ namespace eosio {
             return ac.balance;
          }
 
-         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
-         using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
-         using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
-         using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
-         using open_action = eosio::action_wrapper<"open"_n, &token::open>;
-         using close_action = eosio::action_wrapper<"close"_n, &token::close>;
+         using create_action = eosio::action_wrapper<NT(create), &token::create>;
+         using issue_action = eosio::action_wrapper<NT(issue), &token::issue>;
+         using retire_action = eosio::action_wrapper<NT(retire), &token::retire>;
+         using transfer_action = eosio::action_wrapper<NT(transfer), &token::transfer>;
+         using open_action = eosio::action_wrapper<NT(open), &token::open>;
+         using close_action = eosio::action_wrapper<NT(close), &token::close>;
       private:
          struct [[eosio::table]] account {
             asset    balance;
 
-            uint64_t primary_key()const { return balance.symbol.code().raw(); }
+            eosio::uint256_t primary_key()const { return balance.symbol.code().raw(); }
          };
 
          struct [[eosio::table]] currency_stats {
@@ -128,11 +128,11 @@ namespace eosio {
             asset    max_supply;
             name     issuer;
 
-            uint64_t primary_key()const { return supply.symbol.code().raw(); }
+            eosio::uint256_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
-         typedef eosio::multi_index< "accounts"_n, account > accounts;
-         typedef eosio::multi_index< "stat"_n, currency_stats > stats;
+         typedef eosio::multi_index< NT(accounts), account > accounts;
+         typedef eosio::multi_index< NT(stat), currency_stats > stats;
 
          void sub_balance( const name& owner, const asset& value );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );

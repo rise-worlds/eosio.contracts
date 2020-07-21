@@ -245,16 +245,16 @@ namespace eosioboot {
          [[eosio::action]]
          void reqactivated( const eosio::checksum256& feature_digest );
 
-         using newaccount_action = action_wrapper<"newaccount"_n, &boot::newaccount>;
-         using updateauth_action = action_wrapper<"updateauth"_n, &boot::updateauth>;
-         using deleteauth_action = action_wrapper<"deleteauth"_n, &boot::deleteauth>;
-         using linkauth_action = action_wrapper<"linkauth"_n, &boot::linkauth>;
-         using unlinkauth_action = action_wrapper<"unlinkauth"_n, &boot::unlinkauth>;
-         using canceldelay_action = action_wrapper<"canceldelay"_n, &boot::canceldelay>;
-         using setcode_action = action_wrapper<"setcode"_n, &boot::setcode>;
-         using setabi_action = action_wrapper<"setabi"_n, &boot::setabi>;
-         using activate_action = action_wrapper<"activate"_n, &boot::activate>;
-         using reqactivated_action = action_wrapper<"reqactivated"_n, &boot::reqactivated>;
+         using newaccount_action = action_wrapper<NT(newaccount), &boot::newaccount>;
+         using updateauth_action = action_wrapper<NT(updateauth), &boot::updateauth>;
+         using deleteauth_action = action_wrapper<NT(deleteauth), &boot::deleteauth>;
+         using linkauth_action = action_wrapper<NT(linkauth), &boot::linkauth>;
+         using unlinkauth_action = action_wrapper<NT(unlinkauth), &boot::unlinkauth>;
+         using canceldelay_action = action_wrapper<NT(canceldelay), &boot::canceldelay>;
+         using setcode_action = action_wrapper<NT(setcode), &boot::setcode>;
+         using setabi_action = action_wrapper<NT(setabi), &boot::setabi>;
+         using activate_action = action_wrapper<NT(activate), &boot::activate>;
+         using reqactivated_action = action_wrapper<NT(reqactivated), &boot::reqactivated>;
    };
    /** @}*/ // end of @defgroup eosioboot eosio.boot
 } /// namespace eosioboot

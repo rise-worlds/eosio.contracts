@@ -109,8 +109,8 @@ namespace eosiosystem {
       auto old_last_producer_schedule_update = _gstate.last_producer_schedule_update;
       _gstate.last_producer_schedule_update = block_time;
 
-      // auto idx = _producers.get_index<"prototalvote"_n>();
-      auto idx = _producers.get_index<"prototalchip"_n>();
+      // auto idx = _producers.get_index<NT(prototalvote)>();
+      auto idx = _producers.get_index<NT(prototalchip)>();
 
       std::vector<eosio::producer_authority> top_producers;
       top_producers.reserve(_gstate.max_producer_schedule_size);

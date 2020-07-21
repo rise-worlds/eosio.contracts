@@ -121,7 +121,7 @@ namespace eosiosystem {
    struct [[eosio::table("abihash"), eosio::contract("eosio.system")]] abi_hash {
       name              owner;
       checksum256       hash;
-      uint64_t primary_key()const { return owner.value; }
+      eosio::uint256_t primary_key()const { return owner.value; }
 
       EOSLIB_SERIALIZE( abi_hash, (owner)(hash) )
    };
@@ -260,14 +260,14 @@ namespace eosiosystem {
 
          /** @}*/
 
-         using newaccount_action = eosio::action_wrapper<"newaccount"_n, &native::newaccount>;
-         using updateauth_action = eosio::action_wrapper<"updateauth"_n, &native::updateauth>;
-         using deleteauth_action = eosio::action_wrapper<"deleteauth"_n, &native::deleteauth>;
-         using linkauth_action = eosio::action_wrapper<"linkauth"_n, &native::linkauth>;
-         using unlinkauth_action = eosio::action_wrapper<"unlinkauth"_n, &native::unlinkauth>;
-         using canceldelay_action = eosio::action_wrapper<"canceldelay"_n, &native::canceldelay>;
-         using setcode_action = eosio::action_wrapper<"setcode"_n, &native::setcode>;
-         using setabi_action = eosio::action_wrapper<"setabi"_n, &native::setabi>;
+         using newaccount_action = eosio::action_wrapper<NT(newaccount), &native::newaccount>;
+         using updateauth_action = eosio::action_wrapper<NT(updateauth), &native::updateauth>;
+         using deleteauth_action = eosio::action_wrapper<NT(deleteauth), &native::deleteauth>;
+         using linkauth_action = eosio::action_wrapper<NT(linkauth), &native::linkauth>;
+         using unlinkauth_action = eosio::action_wrapper<NT(unlinkauth), &native::unlinkauth>;
+         using canceldelay_action = eosio::action_wrapper<NT(canceldelay), &native::canceldelay>;
+         using setcode_action = eosio::action_wrapper<NT(setcode), &native::setcode>;
+         using setabi_action = eosio::action_wrapper<NT(setabi), &native::setabi>;
    };
    /** @}*/ // @addtogroup eosiosystem
 }

@@ -272,27 +272,27 @@ namespace eosiobios {
          struct [[eosio::table]] abi_hash {
             name              owner;
             checksum256       hash;
-            uint64_t primary_key()const { return owner.value; }
+            eosio::uint256_t primary_key()const { return owner.value; }
 
             EOSLIB_SERIALIZE( abi_hash, (owner)(hash) )
          };
 
-         typedef eosio::multi_index< "abihash"_n, abi_hash > abi_hash_table;
+         typedef eosio::multi_index< NT(abihash), abi_hash > abi_hash_table;
 
-         using newaccount_action = action_wrapper<"newaccount"_n, &bios::newaccount>;
-         using updateauth_action = action_wrapper<"updateauth"_n, &bios::updateauth>;
-         using deleteauth_action = action_wrapper<"deleteauth"_n, &bios::deleteauth>;
-         using linkauth_action = action_wrapper<"linkauth"_n, &bios::linkauth>;
-         using unlinkauth_action = action_wrapper<"unlinkauth"_n, &bios::unlinkauth>;
-         using canceldelay_action = action_wrapper<"canceldelay"_n, &bios::canceldelay>;
-         using setcode_action = action_wrapper<"setcode"_n, &bios::setcode>;
-         using setabi_action = action_wrapper<"setabi"_n, &bios::setabi>;
-         using setpriv_action = action_wrapper<"setpriv"_n, &bios::setpriv>;
-         using setalimits_action = action_wrapper<"setalimits"_n, &bios::setalimits>;
-         using setprods_action = action_wrapper<"setprods"_n, &bios::setprods>;
-         using setparams_action = action_wrapper<"setparams"_n, &bios::setparams>;
-         using reqauth_action = action_wrapper<"reqauth"_n, &bios::reqauth>;
-         using activate_action = action_wrapper<"activate"_n, &bios::activate>;
-         using reqactivated_action = action_wrapper<"reqactivated"_n, &bios::reqactivated>;
+         using newaccount_action = action_wrapper<NT(newaccount), &bios::newaccount>;
+         using updateauth_action = action_wrapper<NT(updateauth), &bios::updateauth>;
+         using deleteauth_action = action_wrapper<NT(deleteauth), &bios::deleteauth>;
+         using linkauth_action = action_wrapper<NT(linkauth), &bios::linkauth>;
+         using unlinkauth_action = action_wrapper<NT(unlinkauth), &bios::unlinkauth>;
+         using canceldelay_action = action_wrapper<NT(canceldelay), &bios::canceldelay>;
+         using setcode_action = action_wrapper<NT(setcode), &bios::setcode>;
+         using setabi_action = action_wrapper<NT(setabi), &bios::setabi>;
+         using setpriv_action = action_wrapper<NT(setpriv), &bios::setpriv>;
+         using setalimits_action = action_wrapper<NT(setalimits), &bios::setalimits>;
+         using setprods_action = action_wrapper<NT(setprods), &bios::setprods>;
+         using setparams_action = action_wrapper<NT(setparams), &bios::setparams>;
+         using reqauth_action = action_wrapper<NT(reqauth), &bios::reqauth>;
+         using activate_action = action_wrapper<NT(activate), &bios::activate>;
+         using reqactivated_action = action_wrapper<NT(reqactivated), &bios::reqactivated>;
    };
 }

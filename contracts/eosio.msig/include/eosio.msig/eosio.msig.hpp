@@ -103,31 +103,31 @@ namespace eosio {
          [[eosio::action]]
          void invalidate( name account );
 
-         using propose_action = eosio::action_wrapper<"propose"_n, &multisig::propose>;
-         using approve_action = eosio::action_wrapper<"approve"_n, &multisig::approve>;
-         using unapprove_action = eosio::action_wrapper<"unapprove"_n, &multisig::unapprove>;
-         using cancel_action = eosio::action_wrapper<"cancel"_n, &multisig::cancel>;
-         using exec_action = eosio::action_wrapper<"exec"_n, &multisig::exec>;
-         using invalidate_action = eosio::action_wrapper<"invalidate"_n, &multisig::invalidate>;
+         using propose_action = eosio::action_wrapper<NT(propose), &multisig::propose>;
+         using approve_action = eosio::action_wrapper<NT(approve), &multisig::approve>;
+         using unapprove_action = eosio::action_wrapper<NT(unapprove), &multisig::unapprove>;
+         using cancel_action = eosio::action_wrapper<NT(cancel), &multisig::cancel>;
+         using exec_action = eosio::action_wrapper<NT(exec), &multisig::exec>;
+         using invalidate_action = eosio::action_wrapper<NT(invalidate), &multisig::invalidate>;
 
       private:
          struct [[eosio::table]] proposal {
             name                            proposal_name;
             std::vector<char>               packed_transaction;
 
-            uint64_t primary_key()const { return proposal_name.value; }
+            eosio::uint256_t primary_key()const { return proposal_name.value; }
          };
 
-         typedef eosio::multi_index< "proposal"_n, proposal > proposals;
+         typedef eosio::multi_index< NT(proposal), proposal > proposals;
 
          struct [[eosio::table]] old_approvals_info {
             name                            proposal_name;
             std::vector<permission_level>   requested_approvals;
             std::vector<permission_level>   provided_approvals;
 
-            uint64_t primary_key()const { return proposal_name.value; }
+            eosio::uint256_t primary_key()const { return proposal_name.value; }
          };
-         typedef eosio::multi_index< "approvals"_n, old_approvals_info > old_approvals;
+         typedef eosio::multi_index< NT(approvals), old_approvals_info > old_approvals;
 
          struct approval {
             permission_level level;
@@ -143,18 +143,18 @@ namespace eosio {
             std::vector<approval>   requested_approvals;
             std::vector<approval>   provided_approvals;
 
-            uint64_t primary_key()const { return proposal_name.value; }
+            eosio::uint256_t primary_key()const { return proposal_name.value; }
          };
-         typedef eosio::multi_index< "approvals2"_n, approvals_info > approvals;
+         typedef eosio::multi_index< NT(approvals2), approvals_info > approvals;
 
          struct [[eosio::table]] invalidation {
             name         account;
             time_point   last_invalidation_time;
 
-            uint64_t primary_key() const { return account.value; }
+            eosio::uint256_t primary_key() const { return account.value; }
          };
 
-         typedef eosio::multi_index< "invals"_n, invalidation > invalidations;
+         typedef eosio::multi_index< NT(invals), invalidation > invalidations;
    };
    /** @}*/ // end of @defgroup eosiomsig eosio.msig
 } /// namespace eosio

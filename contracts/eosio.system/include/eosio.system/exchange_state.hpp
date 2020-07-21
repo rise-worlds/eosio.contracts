@@ -32,7 +32,7 @@ namespace eosiosystem {
       connector base;
       connector quote;
 
-      uint64_t primary_key()const { return supply.symbol.raw(); }
+      eosio::uint256_t primary_key()const { return supply.symbol.raw(); }
 
       asset convert_to_exchange( connector& reserve, const asset& payment );
       asset convert_from_exchange( connector& reserve, const asset& tokens );
@@ -49,6 +49,6 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( exchange_state, (supply)(base)(quote) )
    };
 
-   typedef eosio::multi_index< "rammarket"_n, exchange_state > rammarket;
+   typedef eosio::multi_index< NT(rammarket), exchange_state > rammarket;
    /** @}*/ // enf of @addtogroup eosiosystem
 } /// namespace eosiosystem
