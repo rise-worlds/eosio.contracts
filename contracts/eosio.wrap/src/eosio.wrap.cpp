@@ -14,3 +14,5 @@ void wrap::exec( ignore<name>, ignore<transaction> ) {
 }
 
 } /// namespace eosio
+
+EOSIO_DISPATCH( eosio::wrap, (exec) )

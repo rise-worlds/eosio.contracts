@@ -16,22 +16,22 @@ namespace eosiosystem {
    }
 
    system_contract::system_contract( name s, name code, datastream<const char*> ds )
-   :native(s,code,ds),
-    _voters(get_self(), get_self().value),
-    _producers(get_self(), get_self().value),
-    _producers2(get_self(), get_self().value),
-    _standby_producers(get_self(), get_self().value),
-    _global(get_self(), get_self().value),
-    _global2(get_self(), get_self().value),
-    _global3(get_self(), get_self().value),
-    _global4(get_self(), get_self().value),
-    _rammarket(get_self(), get_self().value),
-    _rexpool(get_self(), get_self().value),
-    _rexretpool(get_self(), get_self().value),
-    _rexretbuckets(get_self(), get_self().value),
-    _rexfunds(get_self(), get_self().value),
-    _rexbalance(get_self(), get_self().value),
-    _rexorders(get_self(), get_self().value)
+   :native(s,code,ds)
+   , _global(get_self(), get_self().value)
+   , _global2(get_self(), get_self().value)
+   , _global3(get_self(), get_self().value)
+   , _global4(get_self(), get_self().value)
+   , _rammarket(get_self(), get_self().value)
+   // , _rexpool(get_self(), get_self().value)
+   // , _rexretpool(get_self(), get_self().value)
+   // , _rexretbuckets(get_self(), get_self().value)
+   , _rexfunds(get_self(), get_self().value)
+   , _rexbalance(get_self(), get_self().value)
+   , _rexorders(get_self(), get_self().value)
+   , _voters(get_self(), get_self().value)
+   , _producers(get_self(), get_self().value)
+   , _producers2(get_self(), get_self().value)
+   , _standby_producers(get_self(), get_self().value)
    {
       _gstate  = _global.exists() ? _global.get() : get_default_parameters();
       _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
@@ -357,6 +357,7 @@ namespace eosiosystem {
       });
 
       set_resource_limits( newact, 0, 0, 0 );
+      printf("DDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n");
    }
 
    void native::setabi( const name& acnt, const std::vector<char>& abi ) {
@@ -397,5 +398,22 @@ namespace eosiosystem {
       token::open_action open_act{ token_account, { {get_self(), active_permission} } };
       open_act.send( rex_account, core, get_self() );
    }
-
 } /// eosio.system
+
+EOSIO_DISPATCH( eosiosystem::system_contract,
+     // native.hpp (newaccount definition is actually in poc.system.cpp)
+     (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)(setcode)
+     // potato.system.cpp
+     (init)(setram)(setramrate)(setparams)(setpriv)(setalimits)(setacctram)(setacctnet)(setacctcpu)
+     (rmvproducer)(updtrevision)(bidname)(bidrefund)(activate)
+     // rex.cpp
+     (deposit)(withdraw)(buyrex)(unstaketorex)(sellrex)(cnclrexorder)(rentcpu)(rentnet)(fundcpuloan)(fundnetloan)
+     (defcpuloan)(defnetloan)(updaterex)(consolidate)(mvtosavings)(mvfrsavings)(setrex)(rexexec)(closerex)
+     // delegate_bandwidth.cpp
+     (buyrambytes)(buyram)(sellram)(delegatebw)(undelegatebw)(refund)
+     // voting.cpp
+     (regproducer)(unregprod)(voteproducer)(regproxy)(regproducer2)
+     // producer_pay.cpp
+     (onblock)(claimrewards)(setmaxprods)(enstandby)(chipcounter)
+     (setinflation)
+)

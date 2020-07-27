@@ -188,7 +188,7 @@ namespace eosiosystem {
    }
 
    // Defines `producer_info` structure to be stored in `producer_info` table, added after version 1.0
-   struct [[eosio::table, eosio::contract("eosio.system")]] producer_info {
+   struct [[eosio::table("producers"), eosio::contract("eosio.system")]] producer_info {
       name                                                     owner;
       double                                                   total_votes = 0;
       eosio::public_key                                        producer_key; /// a packed public key object
@@ -222,7 +222,7 @@ namespace eosiosystem {
    };
 
    // Defines new producer info structure to be stored in new producer info table, added after version 1.3.0
-   struct [[eosio::table, eosio::contract("eosio.system")]] producer_info2 {
+   struct [[eosio::table("producers2"), eosio::contract("eosio.system")]] producer_info2 {
       name            owner;
       double          votepay_share = 0;
       time_point      last_votepay_share_update;
@@ -233,12 +233,21 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( producer_info2, (owner)(votepay_share)(last_votepay_share_update) )
    };
 
+   struct [[eosio::table("standby"), eosio::contract("eosio.system")]] standby_producer_info
+   {
+      name                                                     owner;
+      eosio::block_signing_authority                           producer_authority;
+
+      eosio::uint256_t primary_key()const { return owner.value; }
+      EOSLIB_SERIALIZE( standby_producer_info, (owner)(producer_authority) )
+   };
+
    // Voter info. Voter info stores information about the voter:
    // - `owner` the voter
    // - `proxy` the proxy set by the voter, if any
    // - `producers` the producers approved by this voter if no proxy set
    // - `staked` the amount staked
-   struct [[eosio::table, eosio::contract("eosio.system")]] voter_info {
+   struct [[eosio::table("voters"), eosio::contract("eosio.system")]] voter_info {
       name                owner;     /// the voter
       name                proxy;     /// the proxy set by the voter, if any
       std::vector<name>   producers; /// the producers approved by this voter if no proxy set
@@ -270,14 +279,6 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
    };
 
-   struct [[eosio::table("standby"), eosio::contract("eosio.system")]] standby_producer_info
-   {
-      name                                                     owner;
-      eosio::block_signing_authority                           producer_authority;
-      eosio::uint256_t primary_key()const { return owner.value; }
-      EOSLIB_SERIALIZE( standby_producer_info, (owner)(producer_authority) )
-   };
-
 
    typedef eosio::multi_index< NT(voters), voter_info >  voters_table;
 
@@ -300,7 +301,7 @@ namespace eosiosystem {
 
    typedef eosio::singleton< NT(global4), eosio_global_state4 > global_state4_singleton;
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] user_resources {
+   struct [[eosio::table("userres"), eosio::contract("eosio.system")]] user_resources {
       name          owner;
       asset         net_weight;
       asset         cpu_weight;
@@ -314,7 +315,7 @@ namespace eosiosystem {
    };
 
    // Every user 'from' has a scope/table that uses every receipient 'to' as the primary key.
-   struct [[eosio::table, eosio::contract("eosio.system")]] delegated_bandwidth {
+   struct [[eosio::table("delband"), eosio::contract("eosio.system")]] delegated_bandwidth {
       name          from;
       name          to;
       asset         net_weight;
@@ -328,7 +329,7 @@ namespace eosiosystem {
 
    };
 
-   struct [[eosio::table, eosio::contract("eosio.system")]] refund_request {
+   struct [[eosio::table("refunds"), eosio::contract("eosio.system")]] refund_request {
       name            owner;
       time_point_sec  request_time;
       eosio::asset    net_amount;
@@ -355,20 +356,22 @@ namespace eosiosystem {
    // - `total_rex` total number of REX shares allocated to contributors to total_lendable,
    // - `namebid_proceeds` the amount of CORE_SYMBOL to be transferred from namebids to REX pool,
    // - `loan_num` increments with each new loan
-   struct [[eosio::table,eosio::contract("eosio.system")]] rex_pool {
-      uint8_t    version = 0;
-      asset      total_lent;
-      asset      total_unlent;
-      asset      total_rent;
-      asset      total_lendable;
-      asset      total_rex;
-      asset      namebid_proceeds;
-      uint64_t   loan_num = 0;
+   struct [[eosio::table("rexpool"), eosio::contract("eosio.system")]] rex_pool {
+      // uint8_t    version = 0;
+      // asset      total_lent;
+      // asset      total_unlent;
+      // asset      total_rent;
+      // asset      total_lendable;
+      // asset      total_rex;
+      // asset      namebid_proceeds;
+      // uint64_t   loan_num = 0;
 
-      eosio::uint256_t primary_key()const { return 0; }
+      // eosio::uint256_t primary_key()const { return eosio::uint256_t(0); }
+      // EOSLIB_SERIALIZE( rex_pool, (version)(total_lent)(total_unlent)(total_rent)(total_lendable)(total_rex)(namebid_proceeds)(loan_num) )
    };
 
    typedef eosio::multi_index< NT(rexpool), rex_pool > rex_pool_table;
+   // typedef eosio::singleton< NT(rexpool), rex_pool >   rex_pool_table;
 
    // `rex_return_pool` structure underlying the rex return pool table. A rex return pool table entry is defined by:
    // - `version` defaulted to zero,
@@ -378,47 +381,53 @@ namespace eosiosystem {
    // - `pending_bucket_proceeds` proceeds in the pending 12-hour return bucket,
    // - `current_rate_of_increase` the current rate per dist_interval at which proceeds are added to the rex pool,
    // - `proceeds` the maximum amount of proceeds that can be added to the rex pool at any given time
-   struct [[eosio::table,eosio::contract("eosio.system")]] rex_return_pool {
+   struct [[eosio::table("rexretpool"), eosio::contract("eosio.system")]] rex_return_pool {
       uint8_t        version = 0;
-      time_point_sec last_dist_time;
-      time_point_sec pending_bucket_time      = time_point_sec::maximum();
-      time_point_sec oldest_bucket_time       = time_point_sec::min();
-      int64_t        pending_bucket_proceeds  = 0;
-      int64_t        current_rate_of_increase = 0;
-      int64_t        proceeds                 = 0;
+      // time_point_sec last_dist_time;
+      // time_point_sec pending_bucket_time      = time_point_sec::maximum();
+      // time_point_sec oldest_bucket_time       = time_point_sec::min();
+      // int64_t        pending_bucket_proceeds  = 0;
+      // int64_t        current_rate_of_increase = 0;
+      // int64_t        proceeds                 = 0;
 
       static constexpr uint32_t total_intervals  = 30 * 144; // 30 days
       static constexpr uint32_t dist_interval    = 10 * 60;  // 10 minutes
       static constexpr uint8_t  hours_per_bucket = 12;
       static_assert( total_intervals * dist_interval == 30 * seconds_per_day );
 
-      eosio::uint256_t primary_key()const { return 0; }
+      // eosio::uint256_t primary_key()const { return eosio::uint256_t(0); }
+      EOSLIB_SERIALIZE( rex_return_pool, (version) )
+      // EOSLIB_SERIALIZE( rex_return_pool, (version)(last_dist_time)(pending_bucket_time)(oldest_bucket_time)(pending_bucket_proceeds)(current_rate_of_increase)(proceeds) )
    };
 
-   typedef eosio::multi_index< NT(rexretpool), rex_return_pool > rex_return_pool_table;
+   // typedef eosio::multi_index< NT(rexretpool), rex_return_pool > rex_return_pool_table;
+   typedef eosio::singleton< NT(rexretpool), rex_return_pool >   rex_return_pool_table;
 
    // `rex_return_buckets` structure underlying the rex return buckets table. A rex return buckets table is defined by:
    // - `version` defaulted to zero,
    // - `return_buckets` buckets of proceeds accumulated in 12-hour intervals
-   struct [[eosio::table,eosio::contract("eosio.system")]] rex_return_buckets {
-      uint8_t                           version = 0;
-      std::map<time_point_sec, int64_t> return_buckets;
+   struct [[eosio::table("retbuckets"), eosio::contract("eosio.system")]] rex_return_buckets {
+      // uint8_t                           version = 0;
+      // std::map<time_point_sec, int64_t> return_buckets;
 
-      eosio::uint256_t primary_key()const { return 0; }
+      // eosio::uint256_t primary_key()const { return eosio::uint256_t(0); }
+      // EOSLIB_SERIALIZE( rex_return_buckets, (version)(return_buckets) )
    };
 
    typedef eosio::multi_index< NT(retbuckets), rex_return_buckets > rex_return_buckets_table;
+   // typedef eosio::singleton< NT(retbuckets), rex_return_buckets >   rex_return_buckets_table;
 
    // `rex_fund` structure underlying the rex fund table. A rex fund table entry is defined by:
    // - `version` defaulted to zero,
    // - `owner` the owner of the rex fund,
    // - `balance` the balance of the fund.
-   struct [[eosio::table,eosio::contract("eosio.system")]] rex_fund {
+   struct [[eosio::table("rexfund"), eosio::contract("eosio.system")]] rex_fund {
       uint8_t version = 0;
       name    owner;
       asset   balance;
 
       eosio::uint256_t primary_key()const { return owner.value; }
+      // EOSLIB_SERIALIZE( rex_fund, (version)(owner)(balance) )
    };
 
    typedef eosio::multi_index< NT(rexfund), rex_fund > rex_fund_table;
@@ -429,7 +438,7 @@ namespace eosiosystem {
    // - `vote_stake` the amount of CORE_SYMBOL currently included in owner's vote,
    // - `rex_balance` the amount of REX owned by owner,
    // - `matured_rex` matured REX available for selling
-   struct [[eosio::table,eosio::contract("eosio.system")]] rex_balance {
+   struct [[eosio::table("rexbal"), eosio::contract("eosio.system")]] rex_balance {
       uint8_t version = 0;
       name    owner;
       asset   vote_stake;
@@ -438,6 +447,7 @@ namespace eosiosystem {
       std::deque<std::pair<time_point_sec, int64_t>> rex_maturities; /// REX daily maturity buckets
 
       eosio::uint256_t primary_key()const { return owner.value; }
+      // EOSLIB_SERIALIZE( rex_balance, (version)(owner)(vote_stake)(rex_balance)(matured_rex)(rex_maturities) )
    };
 
    typedef eosio::multi_index< NT(rexbal), rex_balance > rex_balance_table;
@@ -452,7 +462,7 @@ namespace eosiosystem {
    // - `loan_num` loan number/id,
    // - `expiration` the expiration time when loan will be either closed or renewed
    //       If payment <= balance, the loan is renewed, and closed otherwise.
-   struct [[eosio::table,eosio::contract("eosio.system")]] rex_loan {
+   struct [[eosio::table, eosio::contract("eosio.system")]] rex_loan {
       uint8_t             version = 0;
       name                from;
       name                receiver;
@@ -462,9 +472,10 @@ namespace eosiosystem {
       uint64_t            loan_num;
       eosio::time_point   expiration;
 
-      eosio::uint256_t primary_key()const { return loan_num;                   }
+      eosio::uint256_t primary_key()const { return loan_num;           }
       uint64_t by_expr()const     { return expiration.elapsed.count(); }
       uint64_t by_owner()const    { return from.value;                 }
+      // EOSLIB_SERIALIZE( rex_loan, (version)(from)(receiver)(payment)(balance)(total_staked)(loan_num)(expiration) )
    };
 
    typedef eosio::multi_index< NT(cpuloan), rex_loan,
@@ -477,7 +488,7 @@ namespace eosiosystem {
                                indexed_by<NT(byowner), const_mem_fun<rex_loan, uint64_t, &rex_loan::by_owner>>
                              > rex_net_loan_table;
 
-   struct [[eosio::table,eosio::contract("eosio.system")]] rex_order {
+   struct [[eosio::table("rexqueue"), eosio::contract("eosio.system")]] rex_order {
       uint8_t             version = 0;
       name                owner;
       asset               rex_requested;
@@ -489,6 +500,7 @@ namespace eosiosystem {
       void close()                { is_open = false;    }
       eosio::uint256_t primary_key()const { return owner.value; }
       uint64_t by_time()const     { return is_open ? order_time.elapsed.count() : std::numeric_limits<uint64_t>::max(); }
+      // EOSLIB_SERIALIZE( rex_order, (version)(owner)(rex_requested)(proceeds)(stake_change)(order_time)(is_open) )
    };
 
    typedef eosio::multi_index< NT(rexqueue), rex_order,
@@ -506,10 +518,6 @@ namespace eosiosystem {
    class [[eosio::contract("eosio.system")]] system_contract : public native {
 
       private:
-         voters_table             _voters;
-         producers_table          _producers;
-         producers_table2         _producers2;
-         standby_producer_table   _standby_producers;
          global_state_singleton   _global;
          global_state2_singleton  _global2;
          global_state3_singleton  _global3;
@@ -519,12 +527,16 @@ namespace eosiosystem {
          eosio_global_state3      _gstate3;
          eosio_global_state4      _gstate4;
          rammarket                _rammarket;
-         rex_pool_table           _rexpool;
-         rex_return_pool_table    _rexretpool;
-         rex_return_buckets_table _rexretbuckets;
+         // rex_pool_table           _rexpool;
+         // rex_return_pool_table    _rexretpool;
+         // rex_return_buckets_table _rexretbuckets;
          rex_fund_table           _rexfunds;
          rex_balance_table        _rexbalance;
          rex_order_table          _rexorders;
+         voters_table             _voters;
+         producers_table          _producers;
+         producers_table2         _producers2;
+         standby_producer_table   _standby_producers;
 
       public:
          static constexpr eosio::name active_permission{"active"_n};
@@ -578,7 +590,7 @@ namespace eosiosystem {
           * @param header - the block header produced.
           */
          [[eosio::action]]
-         void onblock( ignore<block_header> header );
+         void onblock(  );
 
          /**
           * Set account limits action sets the resource limits of an account
@@ -1244,8 +1256,8 @@ namespace eosiosystem {
          void transfer_from_fund( const name& owner, const asset& amount );
          void transfer_to_fund( const name& owner, const asset& amount );
          bool rex_loans_available()const;
-         bool rex_system_initialized()const { return _rexpool.begin() != _rexpool.end(); }
-         bool rex_available()const { return rex_system_initialized() && _rexpool.begin()->total_rex.amount > 0; }
+         // bool rex_system_initialized()const { return _rexpool.begin() != _rexpool.end(); }
+         // bool rex_available()const { return rex_system_initialized() && _rexpool.begin()->total_rex.amount > 0; }
          static time_point_sec get_rex_maturity();
          asset add_to_rex_balance( const name& owner, const asset& payment, const asset& rex_received );
          asset add_to_rex_pool( const asset& payment );

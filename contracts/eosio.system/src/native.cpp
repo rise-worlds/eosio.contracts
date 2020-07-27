@@ -4,7 +4,7 @@
 
 namespace eosiosystem {
 
-   void native::onerror( ignore<uint128_t>, ignore<std::vector<char>> ) {
+   void native::onerror( ) {
       eosio::check( false, "the onerror action cannot be called directly" );
    }
 

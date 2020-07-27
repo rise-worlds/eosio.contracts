@@ -73,7 +73,6 @@ namespace eosiosystem {
             info.last_votepay_share_update = ct;
          });
       }
-
    }
 
    void system_contract::regproducer( const name& producer, const eosio::public_key& producer_key, const std::string& url, uint16_t location ) {

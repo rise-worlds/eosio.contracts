@@ -17,3 +17,5 @@ void boot::reqactivated( const eosio::checksum256& feature_digest ) {
 }
 
 }
+
+// EOSIO_DISPATCH( eosioboot::boot, (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(setcode)(setabi)(activate)(reqactivated) )

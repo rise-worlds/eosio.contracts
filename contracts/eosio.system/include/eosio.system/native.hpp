@@ -236,7 +236,7 @@ namespace eosiosystem {
           * @param sent_trx - the deferred transaction that failed.
           */
          [[eosio::action]]
-         void onerror( ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx );
+         void onerror( );
 
          /**
           * Set abi action sets the contract abi for an account.

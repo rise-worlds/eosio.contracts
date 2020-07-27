@@ -55,3 +55,6 @@ void bios::reqactivated( const eosio::checksum256& feature_digest ) {
 }
 
 }
+
+// EOSIO_DISPATCH( eosiobios::bios, (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)
+//    (setcode)(setabi)(setpriv)(setalimits)(setprods)(setparams)(reqauth)(activate)(reqactivated) )

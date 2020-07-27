@@ -7,7 +7,7 @@ namespace eosiosystem {
    using eosio::microseconds;
    using eosio::token;
 
-   void system_contract::onblock( ignore<block_header> ) {
+   void system_contract::onblock(  ) {
       using namespace eosio;
 
       require_auth(get_self());

@@ -26,12 +26,13 @@ namespace eosiosystem {
     *  This action will buy an exact amount of ram and bill the payer the current market price.
     */
    void system_contract::buyrambytes( const name& payer, const name& receiver, uint32_t bytes ) {
-      auto itr = _rammarket.find(ramcore_symbol.raw());
-      const int64_t ram_reserve   = itr->base.balance.amount;
-      const int64_t eos_reserve   = itr->quote.balance.amount;
-      const int64_t cost          = exchange_state::get_bancor_input( ram_reserve, eos_reserve, bytes );
-      const int64_t cost_plus_fee = cost / double(0.995);
-      buyram( payer, receiver, asset{ cost_plus_fee, core_symbol() } );
+      printf("SSSSSSSSSSSSSSSSS\n");
+      // auto itr = _rammarket.find(ramcore_symbol.raw());
+      // const int64_t ram_reserve   = itr->base.balance.amount;
+      // const int64_t eos_reserve   = itr->quote.balance.amount;
+      // const int64_t cost          = exchange_state::get_bancor_input( ram_reserve, eos_reserve, bytes );
+      // const int64_t cost_plus_fee = cost / double(0.995);
+      // buyram( payer, receiver, asset{ cost_plus_fee, core_symbol() } );
    }
 
 
@@ -381,8 +382,9 @@ namespace eosiosystem {
       check( stake_net_quantity >= zero_asset, "must stake a positive amount" );
       check( stake_net_quantity.amount + stake_cpu_quantity.amount > 0, "must stake a positive amount" );
       check( !transfer || from != receiver, "cannot use transfer flag if delegating to self" );
-
+printf("LLLLLLLLLLLLLLLLLLLLLL\n");
       changebw( from, receiver, stake_net_quantity, stake_cpu_quantity, transfer);
+printf("LLKKKKKKKKKKKKKKKKKKKKKKKKKK");
    } // delegatebw
 
    void system_contract::undelegatebw( const name& from, const name& receiver,
